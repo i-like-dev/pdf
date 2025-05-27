@@ -1,44 +1,64 @@
-let fileData = [];
+const RAW_JSON_URL = "https://raw.githubusercontent.com/你的帳號/你的Repo/main/data.json";
+const RAW_BASE_URL = "https://raw.githubusercontent.com/你的帳號/你的Repo/main/files/";
 
-const DATA_URL = 'https://raw.githubusercontent.com/i-like-dev/pdf/main/data.json';
+let files = [];
 
-fetch(DATA_URL)
-  .then(response => response.json())
-  .then(data => {
-    fileData = data;
-  })
-  .catch(error => {
-    alert("無法載入資料庫！");
-    console.error(error);
-  });
+function $(id) {
+  return document.getElementById(id);
+}
 
-let currentFile = null;
+function showInfo(file) {
+  $("creator").textContent = file.creator;
+  $("email").textContent = file.email;
+  $("created").textContent = file.created_at;
+  $("info").classList.remove("hidden");
+}
+
+function showPreview(text) {
+  $("preview").textContent = text;
+  $("preview").classList.remove("hidden");
+}
+
+function showDownloadLink(filename) {
+  $("download").href = RAW_BASE_URL + filename;
+  $("download").classList.remove("hidden");
+}
+
+function getQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    n: params.get("n"),
+    p: params.get("p")
+  };
+}
 
 function lookupFile() {
-  const filename = document.getElementById("filename").value.trim();
-  const fileInfo = fileData.find(item => item.filename === filename);
+  const filename = $("filename").value.trim();
+  const password = $("password").value;
 
-  if (fileInfo) {
-    currentFile = fileInfo;
-    document.getElementById("file-info").style.display = "block";
-    document.getElementById("creator").innerText = fileInfo.creator;
-    document.getElementById("email").innerText = fileInfo.email;
-    document.getElementById("created_at").innerText = fileInfo.created_at;
-    document.getElementById("download-section").style.display = "none";
-  } else {
-    alert("找不到該檔案！");
-    currentFile = null;
-    document.getElementById("file-info").style.display = "none";
-  }
+  const file = files.find(f => f.filename === filename);
+  if (!file) return alert("檔案不存在");
+
+  showInfo(file);
+
+  fetch(RAW_BASE_URL + filename)
+    .then(res => res.text())
+    .then(text => {
+      showPreview(text);
+      if (password === file.password) {
+        showDownloadLink(filename);
+      }
+    });
 }
 
-function verifyPassword() {
-  const passwordInput = document.getElementById("password").value;
-  if (currentFile && passwordInput === currentFile.password) {
-    document.getElementById("download-link").href = currentFile.download_url;
-    document.getElementById("download-section").style.display = "block";
-  } else {
-    alert("密碼錯誤！");
-    document.getElementById("download-section").style.display = "none";
-  }
-}
+fetch(RAW_JSON_URL)
+  .then(res => res.json())
+  .then(data => {
+    files = data;
+    const { n, p } = getQueryParams();
+    if (n) {
+      $("filename").value = n;
+      if (p) $("password").value = p;
+      lookupFile();
+    }
+  });
