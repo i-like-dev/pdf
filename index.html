@@ -2,27 +2,118 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>📄文件下載</title>
+  <title>📄 檔案下載器</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <div class="container">
-    <h2>🔐 文件驗證下載</h2>
-    <input type="text" id="filename" placeholder="請輸入檔名">
-    <input type="password" id="password" placeholder="請輸入密碼">
-    <button onclick="lookupFile()">查詢／下載</button>
+    <h1>🔐 檔案下載器</h1>
+    <p class="subtitle">請輸入檔案名稱進行存取（不含副檔名）</p>
+    <input type="text" id="filename" placeholder="檔案名稱...">
+    <button onclick="searchFile()">🔍 查詢檔案</button>
 
     <div id="info" class="hidden">
-      <p><b>建立者：</b><span id="creator"></span></p>
-      <p><b>電子郵件：</b><span id="email"></span></p>
-      <p><b>建立時間：</b><span id="created"></span></p>
+      <p><strong>建立者：</strong><span id="creator"></span></p>
+      <p><strong>電郵：</strong><span id="email"></span></p>
+      <p><strong>建立時間：</strong><span id="created"></span></p>
     </div>
 
     <pre id="preview" class="hidden"></pre>
-
     <a id="download" class="hidden" href="#" download>📥 下載檔案</a>
+    <p>本系統由 TW WACT 開發 請勿侵權</p>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    const RAW_JSON_URL = "https://raw.githubusercontent.com/i-like-dev/pdf/main/data.json";
+    const RAW_BASE_URL = "https://raw.githubusercontent.com/i-like-dev/pdf/main/files/";
+
+    let files = [];
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        n: params.get("n"),
+        p: params.get("p")
+      };
+    }
+
+    function showInfo(file) {
+      $("creator").textContent = file.creator;
+      $("email").textContent = file.email;
+      $("created").textContent = file.created_at;
+      $("info").classList.remove("hidden");
+    }
+
+    function showPreview(text) {
+      $("preview").textContent = text;
+      $("preview").classList.remove("hidden");
+    }
+
+    function showDownloadLink(filename) {
+      const link = $("download");
+      link.href = RAW_BASE_URL + filename;
+      link.classList.remove("hidden");
+    }
+
+    function searchFile() {
+      const inputName = $("filename").value.trim();
+      if (!inputName) {
+        Swal.fire("錯誤", "請輸入檔名", "warning");
+        return;
+      }
+
+      const file = files.find(f => f.filename.split(".")[0] === inputName);
+      if (!file) {
+        Swal.fire("錯誤", "找不到該檔案", "error");
+        return;
+      }
+
+      showInfo(file);
+
+      Swal.fire({
+        title: '請輸入密碼',
+        input: 'password',
+        inputPlaceholder: '請輸入密碼',
+        showCancelButton: true,
+        confirmButtonText: '確認'
+      }).then(result => {
+        if (result.isConfirmed) {
+          if (result.value === file.password) {
+            fetch(RAW_BASE_URL + file.filename)
+              .then(res => res.text())
+              .then(text => {
+                showPreview(text);
+                showDownloadLink(file.filename);
+                Swal.fire("成功", "密碼正確，已載入檔案", "success");
+              });
+          } else {
+            Swal.fire("錯誤", "密碼錯誤", "error");
+          }
+        }
+      });
+    }
+
+    fetch(RAW_JSON_URL)
+      .then(res => res.json())
+      .then(data => {
+        files = data;
+        const { n, p } = getQueryParams();
+        if (n) {
+          $("filename").value = n;
+          searchFile();
+          if (p) {
+            setTimeout(() => {
+              document.querySelector('.swal2-input').value = p;
+              document.querySelector('.swal2-confirm').click();
+            }, 100);
+          }
+        }
+      });
+  </script>
 </body>
 </html>
