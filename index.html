@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>📂 檔案下載</title>
+<title>📂 檔案下載與預覽</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
   body {
@@ -54,9 +54,9 @@
 </head>
 <body>
 
-<h2>📂 檔案下載</h2>
+<h2>📂 檔案下載與預覽</h2>
 
-<input id="fileInput" placeholder="輸入檔名" autocomplete="off" />
+<input id="fileInput" placeholder="輸入檔名 (不含副檔名)" autocomplete="off" />
 <button id="previewBtn">預覽檔案資訊</button>
 
 <div class="info" id="fileInfo"></div>
@@ -122,7 +122,7 @@
       }
     });
 
-    if (!password) return; 
+    if (!password) return;
 
     if (password !== filesData[filename].password) {
       Swal.fire('錯誤', '密碼錯誤，無法下載', 'error');
@@ -146,15 +146,6 @@
     });
   }
 
-  function getQueryParams() {
-    const params = {};
-    location.search.slice(1).split('&').forEach(pair => {
-      const [key, val] = pair.split('=');
-      if (key) params[key] = decodeURIComponent(val || '');
-    });
-    return params;
-  }
-
   document.getElementById('previewBtn').addEventListener('click', () => {
     const filename = document.getElementById('fileInput').value.trim();
     if (!filename) {
@@ -168,11 +159,11 @@
 
   window.onload = async () => {
     await loadFilesData();
-    const params = getQueryParams();
-
-    if (params.n) {
-      document.getElementById('fileInput').value = params.n;
-      showFileInfo(params.n);
+    const params = new URLSearchParams(window.location.search);
+    const n = params.get('n');
+    if (n) {
+      document.getElementById('fileInput').value = n;
+      showFileInfo(n);
     }
   };
 </script>
