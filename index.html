@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>📂 檔案下載驗證</title>
+<title>📂 檔案下載</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
   body {
@@ -10,15 +10,16 @@
     background: linear-gradient(to right, #203a43, #2c5364);
     color: #fff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    padding: 20px;
   }
   h2 {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
   }
   input, button {
     padding: 12px;
@@ -47,103 +48,97 @@
     font-size: 14px;
     text-align: center;
     line-height: 1.4;
-    min-height: 60px;
+    min-height: 80px;
   }
 </style>
 </head>
 <body>
-  <h2>📂 檔案下載驗證</h2>
-  <input id="fileInput" placeholder="輸入檔名 (不含副檔名)" autocomplete="off" />
-  <input id="passwordInput" type="password" placeholder="輸入密碼" autocomplete="off" />
-  <button id="downloadBtn">驗證並下載</button>
-  <div class="info" id="fileInfo"></div>
+
+<h2>📂 檔案下載</h2>
+
+<input id="fileInput" placeholder="輸入檔名" autocomplete="off" />
+<button id="previewBtn">預覽檔案資訊</button>
+
+<div class="info" id="fileInfo"></div>
+
+<button id="downloadBtn" style="display:none;">下載檔案 (需密碼驗證)</button>
 
 <script>
-  // 這裡修改成你的 GitHub 檔案路徑（完整檔名含副檔名）
-  const files = {
-    "examplefile": {
-      password: "tmps",
-      creator: "tmps109094",
-      email: "tmps109094@walking-cat.com",
-      time: "2025-05-27",
-      url: "https://github.com/i-like-dev/pdf/raw/main/files/0603報告.pdf"
-    },
-    "demo": {
-      password: "123456",
-      creator: "李大華",
-      email: "dahua@example.com",
-      time: "2025-04-20",
-      url: "https://github.com/你的帳號/你的repo/raw/main/files/demo.zip"
-    }
-  };
+  let filesData = {};
 
-  const fileInput = document.getElementById('fileInput');
-  const passwordInput = document.getElementById('passwordInput');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const fileInfo = document.getElementById('fileInfo');
-
-  function showFileInfo(name) {
-    const info = files[name];
-    if (!info) {
-      fileInfo.textContent = "";
-      return;
+  async function loadFilesData() {
+    try {
+      const res = await fetch('files.json');
+      if (!res.ok) throw new Error('無法讀取檔案資料');
+      filesData = await res.json();
+    } catch (e) {
+      Swal.fire('錯誤', '載入檔案資料失敗', 'error');
     }
-    fileInfo.innerHTML = `📄 建立者：${info.creator} <br>✉️ 電郵：${info.email} <br>⏰ 時間：${info.time}`;
   }
 
-  function validateAndDownload() {
-    const filename = fileInput.value.trim();
-    const password = passwordInput.value;
+  function showFileInfo(name) {
+    if (!filesData[name]) {
+      document.getElementById('fileInfo').innerHTML = '❌ 檔案不存在';
+      document.getElementById('downloadBtn').style.display = 'none';
+      return false;
+    }
+    const info = filesData[name];
+    document.getElementById('fileInfo').innerHTML =
+      `📄 建立者：${info.creator} <br>` +
+      `✉️ 電郵：${info.email} <br>` +
+      `⏰ 時間：${info.time}`;
+    document.getElementById('downloadBtn').style.display = 'inline-block';
+    return true;
+  }
 
+  async function downloadFile() {
+    const filename = document.getElementById('fileInput').value.trim();
     if (!filename) {
-      Swal.fire({
-        icon: 'warning',
-        title: '⚠️ 請輸入檔名',
-        confirmButtonColor: '#00ffc8'
-      });
+      Swal.fire('警告', '請先輸入檔名', 'warning');
+      return;
+    }
+    if (!filesData[filename]) {
+      Swal.fire('錯誤', '檔案不存在', 'error');
       return;
     }
 
-    if (!(filename in files)) {
-      Swal.fire({
-        icon: 'error',
-        title: '❌ 檔案不存在',
-        confirmButtonColor: '#00ffc8'
-      });
-      fileInfo.textContent = "";
-      return;
-    }
+    const { value: password } = await Swal.fire({
+      title: '輸入密碼以下載',
+      input: 'password',
+      inputLabel: '密碼',
+      inputPlaceholder: '請輸入密碼',
+      inputAttributes: {
+        maxlength: 20,
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      },
+      showCancelButton: true,
+      confirmButtonText: '確認',
+      cancelButtonText: '取消',
+      inputValidator: (value) => {
+        if (!value) {
+          return '密碼不可空白';
+        }
+      }
+    });
 
-    showFileInfo(filename);
+    if (!password) return; 
 
-    if (!password) {
-      Swal.fire({
-        icon: 'warning',
-        title: '⚠️ 請輸入密碼',
-        confirmButtonColor: '#00ffc8'
-      });
-      return;
-    }
-
-    if (password !== files[filename].password) {
-      Swal.fire({
-        icon: 'error',
-        title: '❌ 密碼錯誤',
-        confirmButtonColor: '#00ffc8'
-      });
+    if (password !== filesData[filename].password) {
+      Swal.fire('錯誤', '密碼錯誤，無法下載', 'error');
       return;
     }
 
     Swal.fire({
       icon: 'success',
-      title: '✅ 驗證成功，開始下載',
+      title: '驗證成功，即將開始下載',
       timer: 1500,
       showConfirmButton: false,
       background: '#004d40',
       color: '#00ffc8'
     }).then(() => {
       const a = document.createElement('a');
-      a.href = files[filename].url;
+      a.href = filesData[filename].url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
@@ -151,20 +146,6 @@
     });
   }
 
-  downloadBtn.addEventListener('click', () => {
-    validateAndDownload();
-  });
-
-  fileInput.addEventListener('input', () => {
-    const filename = fileInput.value.trim();
-    if (filename in files) {
-      showFileInfo(filename);
-    } else {
-      fileInfo.textContent = "";
-    }
-  });
-
-  // 解析網址參數並帶入 input
   function getQueryParams() {
     const params = {};
     location.search.slice(1).split('&').forEach(pair => {
@@ -174,17 +155,24 @@
     return params;
   }
 
-  window.onload = () => {
-    const params = getQueryParams();
-    if (params.n) {
-      fileInput.value = params.n;
-      showFileInfo(params.n);
+  document.getElementById('previewBtn').addEventListener('click', () => {
+    const filename = document.getElementById('fileInput').value.trim();
+    if (!filename) {
+      Swal.fire('警告', '請輸入檔名', 'warning');
+      return;
     }
-    if (params.p) {
-      passwordInput.value = params.p;
-      if(params.n) {
-        validateAndDownload();
-      }
+    showFileInfo(filename);
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', downloadFile);
+
+  window.onload = async () => {
+    await loadFilesData();
+    const params = getQueryParams();
+
+    if (params.n) {
+      document.getElementById('fileInput').value = params.n;
+      showFileInfo(params.n);
     }
   };
 </script>
