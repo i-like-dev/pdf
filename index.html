@@ -2,31 +2,25 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>檔案下載系統</title>
+  <title>📄文件下載</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>安全檔案下載</h1>
-  <div class="form-group">
-    <label for="filename">輸入檔案名稱：</label>
-    <input type="text" id="filename" placeholder="例如：report.pdf">
+  <div class="container">
+    <h2>🔐 文件驗證下載</h2>
+    <input type="text" id="filename" placeholder="檔名">
+    <input type="password" id="password" placeholder="密碼">
     <button onclick="lookupFile()">查詢</button>
-  </div>
 
-  <div id="file-info" style="display: none;">
-    <p><strong>建立者：</strong><span id="creator"></span></p>
-    <p><strong>電子郵件：</strong><span id="email"></span></p>
-    <p><strong>建立時間：</strong><span id="created_at"></span></p>
-
-    <div class="form-group">
-      <label for="password">輸入密碼：</label>
-      <input type="password" id="password" placeholder="請輸入密碼">
-      <button onclick="verifyPassword()">確認</button>
+    <div id="info" class="hidden">
+      <p><b>建立者：</b><span id="creator"></span></p>
+      <p><b>電郵：</b><span id="email"></span></p>
+      <p><b>建立時間：</b><span id="created"></span></p>
     </div>
 
-    <div id="download-section" style="display: none;">
-      <a id="download-link" href="#" target="_blank" download>點此下載檔案</a>
-    </div>
+    <pre id="preview" class="hidden"></pre>
+
+    <a id="download" class="hidden" href="#" download>📥 下載檔案</a>
   </div>
 
   <script src="script.js"></script>
