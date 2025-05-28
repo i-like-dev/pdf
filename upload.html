@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>🔐 JSON 生成器</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="container hidden" id="main">
+    <h1>🛠 JSON 生成器</h1>
+    <p class="subtitle">輸入代號後自動帶入資訊</p>
+
+    <label for="code">代號：</label>
+    <input type="text" id="code" placeholder="輸入代號...">
+    <button onclick="fillInfo()">帶入資料</button>
+
+    <div id="form" class="hidden">
+      <label for="filename">檔案名稱：</label>
+      <input type="text" id="filename" placeholder="輸入檔名...">
+
+      <label for="password">密碼：</label>
+      <input type="text" id="password" placeholder="輸入密碼...">
+
+      <p><strong>姓名：</strong><span id="name"></span></p>
+      <p><strong>Email：</strong><span id="email"></span></p>
+      <p><strong>時間：</strong><span id="created"></span></p>
+
+      <button onclick="generateJSON()">🔧 產生 JSON</button>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
+  <script>
+    const USERS = {
+      "u001": { name: "tmps109094", email: "tmps109094@walking-cat.com" },
+      "u002": { name: "TW_WACT 無名貓", email: "WACT@walking-cat.com" },
+      "u003": { name: "李大仁", email: "jen@example.com" }
+    };
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function fillInfo() {
+      const code = $("code").value.trim();
+      if (!USERS[code]) {
+        Swal.fire("錯誤", "找不到該代號", "error");
+        return;
+      }
+
+      const user = USERS[code];
+      $("name").textContent = user.name;
+      $("email").textContent = user.email;
+      $("created").textContent = new Date().toISOString();
+      $("form").classList.remove("hidden");
+    }
+
+    function generateJSON() {
+      const filename = $("filename").value.trim();
+      const password = $("password").value.trim();
+      const creator = $("name").textContent;
+      const email = $("email").textContent;
+      const created_at = $("created").textContent;
+
+      if (!filename || !password) {
+        Swal.fire("錯誤", "請填寫完整資訊", "warning");
+        return;
+      }
+
+      const json = {
+        filename: filename + ".txt",
+        password,
+        creator,
+        email,
+        created_at
+      };
+
+      $("output").textContent = JSON.stringify(json, null, 2);
+    }
+
+    // 驗證進入頁面
+    Swal.fire({
+      title: '請輸入密碼',
+      input: 'password',
+      inputPlaceholder: '輸入密碼以進入 upload.html',
+      showCancelButton: true,
+      confirmButtonText: '進入'
+    }).then(result => {
+      if (result.isConfirmed && result.value === 'upload') {
+        $("main").classList.remove("hidden");
+      } else {
+        Swal.fire("拒絕進入", "密碼錯誤或取消操作", "error").then(() => {
+          window.location.href = "index.html";
+        });
+      }
+    });
+  </script>
+</body>
+</html>
